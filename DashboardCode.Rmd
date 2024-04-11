@@ -1,6 +1,6 @@
 ---
-title: "project"
-author: "Praneeth"
+title: "YoutubeAnalytics"
+author: "Praneeth, Purvaja"
 date: "2023-02-06"
 output: html_document
 ---
