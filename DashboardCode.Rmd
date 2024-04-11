@@ -1,0 +1,120 @@
+---
+title: "project"
+author: "Praneeth"
+date: "2023-02-06"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## R Markdown
+
+This is an R Markdown document. Markdown is a simple formatting syntax for authoring HTML, PDF, and MS Word documents. For more details on using R Markdown see <http://rmarkdown.rstudio.com>.
+
+When you click the **Knit** button a document will be generated that includes both content as well as the output of any embedded R code chunks within the document. You can embed an R code chunk like this:
+
+```{r cars}
+summary(cars)
+```
+
+## Including Plots
+
+You can also embed plots, for example:
+
+```{r pressure, echo=FALSE}
+plot(pressure)
+```
+
+Note that the `echo = FALSE` parameter was added to the code chunk to prevent printing of the R code that generated the plot.
+
+
+
+
+```{r}
+install.packages("tidyverse")
+```
+
+
+```{r}
+library(tidyverse)
+```
+```{r}
+#Code For Reading all the files
+```
+
+
+```{r}
+df1 <- read_csv("/Users/praneeth/Downloads/archive-2/brazil.csv")
+df2 <- read_csv("/Users/praneeth/Downloads/archive-2/canada.csv")
+df3 <- read_csv("/Users/praneeth/Downloads/archive-2/england.csv")
+df4 <- read_csv("/Users/praneeth/Downloads/archive-2/france.csv")
+df5 <- read_csv("/Users/praneeth/Downloads/archive-2/germany.csv")
+df6 <- read_csv("/Users/praneeth/Downloads/archive-2/india.csv")
+df7 <- read_csv("/Users/praneeth/Downloads/archive-2/japan.csv")
+df8 <- read_csv("/Users/praneeth/Downloads/archive-2/korea.csv")
+df9 <- read_csv("/Users/praneeth/Downloads/archive-2/mexico.csv")
+df10 <- read_csv("/Users/praneeth/Downloads/archive-2/russia.csv")
+df11 <- read_csv("/Users/praneeth/Downloads/archive-2/usa.csv")
+```
+
+#Code for combining all the files
+
+```{r}
+final <- bind_rows(df1,df2,df3,df4,df5,df6,df7,df8,df9,df10,df11)
+```
+
+
+```{r}
+save(final, file = "youtube2.Rdata")
+```
+
+
+```{r}
+load("youtube2.Rdata")
+```
+
+
+```{r}
+df <- final
+```
+
+#Code for adding catagory specifications
+
+```{r}
+df$Genre <- ifelse(grepl("Pop|Hip-Hop/Rap|Rock Music|EDM|instrumental|grammys|Gospelmusic|heavymetal|Acoustics|80sMusic|90sMusic", df$channelTitle), "Music",
+                   ifelse(grepl("Gadgets|Programming and Coding|
+Operating Systems|Mobile Devices and Apps|Cryptocurrency|Augmented Reality|Virtual Reality|Gamification|Software Development|Web Development|Technology|Latest|Artificial Intelligence|Robotics|Scientist|Apps|Data Science|Coding|Unboxing|Tech News", df$channelTitle),"Technology",
+                          ifelse(grepl("Biopic|Melodrama|Comedies|Crime Movies|Action/Adventure|Animated|Socio-Fantasy|Horror|Musical|Mystery|Romance|Science Fiction|Super Hero|Thriller|Spy|Historical|Political|Family Drama|Satire", df$channelTitle),"Film",
+                                ifelse(grepl("Food Docummentaries|Baking|Vegan|Cooking Recepies|Food Reviews|Food ASMR|Food Fusion|Food Vlogs|Regional Cuisines|Appetizers|Street Food|Healthy Eating|Drinks|Deserts|Barbecue|Grilling|Food reality show|Fast Food|Snacks|Indian Food|HowThai Food|Masala|Mexican Food|Tacos|Parmesan Cheese|Grill|Sea Food|Food Vlog", df$channelTitle),"Food",
+                                       ifelse(grepl("Action|Adventure|Strategy|Gaming Live|Racing|Simulation|Role Playing|Stealth Games|Card Games|Board Games|Shooter Games|Fighting Games|Horror Games|MMO|MOBA|Sandbox|Interactive|Open World|Turn Based Strategy|Real Time Strategy", df$channelTitle),"Gaming",
+                                                ifelse(grepl("Beauty|Fashion|Clothing Tips|Makeup Tutorial|Nail Arts|Predicure|Manicure|Mall Hauling|Thanksgiving Sale|Clearance Sale|Beauty Challenge|Closet Tips|Bridal Wear |Formal Wear|Fashion Tips|Plus Size Fashion", df$channelTitle),"LifeStyle",
+                                       ifelse(grepl("Any Other Data|Every Other
+                                    Data",df$channelTitle),"Uncategorized","Others")))))))
+```
+
+```{r}
+table(df$Genre)
+```
+```{r}
+ ifelse(grepl("Skincare Routines|Beauty Product Reviews|DIY Beauty Treatments|Makeup Tutorials|Hairstyle Transformations|Shopping and Styling|Fashion Hauls|Plus Size Fashion|Fitness Fashion|Gender Neutral Beauty Tutorials|Halloween Costume ideas|Organic Beauty Product Reviews|Seasonal Beauty Tips|Anti-Aging tips|Wardrobe Essentials|Thrift Store Hauls|Beauty Q&A|Beauty Challenges|Closet Organization tips", df$channelTitle),"Lifestyle",
+```
+
+#Few data changes
+
+```{r}
+df$publishedAt <- as.Date(df$publishedAt, format = "%Y-%m-%d")
+df$trending_date <- as.Date(df$trending_date, format = "%Y-%m-%d")
+```
+
+
+```{r}
+final = df
+```
+
+```{r}
+save(final, file = "youtube2.Rdata")
+```
+
+
