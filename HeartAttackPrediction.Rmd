@@ -1,0 +1,431 @@
+---
+title: "MLBFinal"
+author: "Praneeth"
+date: "2023-12-09"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## R Markdown
+
+This is an R Markdown document. Markdown is a simple formatting syntax for authoring HTML, PDF, and MS Word documents. For more details on using R Markdown see <http://rmarkdown.rstudio.com>.
+
+When you click the **Knit** button a document will be generated that includes both content as well as the output of any embedded R code chunks within the document. You can embed an R code chunk like this:
+
+```{r cars}
+summary(cars)
+```
+
+## Including Plots
+
+You can also embed plots, for example:
+
+```{r pressure, echo=FALSE}
+plot(pressure)
+```
+
+Note that the `echo = FALSE` parameter was added to the code chunk to prevent printing of the R code that generated the plot.
+
+```{r}
+df1 = EnergyEfficiency
+```
+
+
+```{r}
+columns_to_remove <- c("X6Dummy", "X8Dummy")
+df1 <- df1[, !(names(df1) %in% columns_to_remove)]
+```
+
+
+```{r}
+df1
+```
+
+
+```{r}
+library(fastDummies)
+```
+
+```{r}
+df <- dummy_cols(df1, select_columns = c("X6", "X8"), remove_first_dummy  = TRUE, remove_selected_columns = TRUE)
+```
+
+
+```{r}
+View(df)
+```
+
+
+```{r}
+#3A
+
+#Divide entire dataset to quartiles 
+
+# Assuming 'df' is your dataframe and it contains the columns 'Y1' and 'Y2'
+
+# Calculate quartiles for 'Y1' and 'Y2'
+quartiles_Y1 <- quantile(df$Y1, probs = c(0.25, 0.5, 0.75))
+quartiles_Y2 <- quantile(df$Y2, probs = c(0.25, 0.5, 0.75))
+
+# Assign categories based on quartiles
+df$Category_Y1 <- cut(df$Y1, breaks = c(-Inf, quartiles_Y1, Inf), labels = c("D", "C", "B", "A"), include.lowest = TRUE)
+df$Category_Y2 <- cut(df$Y2, breaks = c(-Inf, quartiles_Y2, Inf), labels = c("D", "C", "B", "A"), include.lowest = TRUE)
+
+# View the first few rows of the modified dataframe
+head(df)
+
+
+```
+
+
+```{r}
+table(df$Category_Y1)
+```
+
+
+```{r}
+table(df$Category_Y2)
+```
+
+
+```{r}
+# Encoding categories (1 for A and B, -1 for C and D)
+df$Category_Y1_num <- ifelse(df$Category_Y1 %in% c("A", "B"), 1, -1)
+df$Category_Y2_num <- ifelse(df$Category_Y2 %in% c("A", "B"), 1, -1)
+
+set.seed(7) 
+df_index <- sample(nrow(df), 0.7 * nrow(df),replace = FALSE)
+df_train <- df [df_index, ]
+df_test <- df [-df_index, ]
+```
+
+```{r}
+View(df_train)
+```
+
+
+```{r}
+df_train <- df_train[, !colnames(df_train) %in% c("Y1", "Y2","X4", "Category_Y1", "Category_Y2")]
+df_test <- df_test[, !colnames(df_test) %in% c("Y1", "Y2","X4", "Category_Y1", "Category_Y2")]
+
+```
+
+```{r}
+df_train
+```
+
+
+
+
+```{r}
+# Function to train, evaluate, and print perceptron model
+train_and_evaluate_perceptron <- function(train_data, test_data, target_column) {
+    accuracies <- numeric(5)
+    
+    for (i in 1:5) {
+        # Train the perceptron model
+        model <- nnet(as.formula(paste(target_column, "~ .")), 
+                      data = train_data, 
+                      size = 1, 
+                      rang = 0.1, 
+                      decay = 5e-4, 
+                      maxit = 1000, 
+                      linout = TRUE)
+
+        # Print the model
+        print(model)
+
+        # Predictions
+        predictions <- predict(model, test_data[, -which(names(test_data) == target_column)])
+
+        # Binarize predictions: 1 for values > 0, -1 otherwise
+        predictions_binarized <- ifelse(predictions > 0, 1, -1)
+
+        # Calculate accuracy
+        accuracies[i] <- sum(predictions_binarized == test_data[, target_column]) / nrow(test_data)
+    }
+    
+    return(accuracies)
+}
+
+# Train, evaluate, and print models
+accuracies_Y1 <- train_and_evaluate_perceptron(df_train, df_test, "Category_Y1_num")
+accuracies_Y2 <- train_and_evaluate_perceptron(df_train, df_test, "Category_Y2_num")
+
+# Print the accuracies
+accuracies_Y1
+accuracies_Y2
+```
+
+
+
+```{r}
+# SVM - Spport Vector Machines
+svm_df <- df[, c("X1", "X2", "X3", "X5", "X7", "X6_3", "X6_4", "X6_5", "X8_1","X8_2","X8_3","X8_4", "X8_5", "Category_Y1","Category_Y2")]
+
+# Assigning variables (A, B, C, D)
+# converting values of Y1
+
+svm_df$Category_Y1 <- as.factor(svm_df$Category_Y1)
+svm_df$Category_Y2 <- as.factor(svm_df$Category_Y2)
+
+
+
+# Create training and testing data
+svm_index <- sample(nrow(svm_df), 0.7*nrow(svm_df), replace = FALSE)
+svm_train <- svm_df[svm_index, ]
+svm_test <- svm_df[-svm_index, ]
+
+# Creating SVM Model
+svm_model1 <- svm(Category_Y1 ~ X1 + X2 + X3 + X5 + X7 + X6_3 + X6_4 + X6_5 + X8_1 + X8_2 + X8_3 + X8_4 + X8_5, data = svm_train)
+svm_model2 <- svm(Category_Y2 ~ X1 + X2 + X3 + X5 + X7 + X6_3 + X6_4 + X6_5 + X8_1 + X8_2 + X8_3 + X8_4 + X8_5, data = svm_train)
+
+# Printing the model and it's summary
+print(svm_model1)
+print(svm_model2)
+
+summary(svm_model1)
+summary(svm_model2)
+```
+```{r}
+plot(svm_model1, svm_train, X1~X3, slice=list(X5=7,X7=0.25))
+plot(svm_model2, svm_train, X1~X3, slice=list(X5=7,X7=0.25))
+```
+
+```{r}
+
+#Predict the model
+energypredict1 <- predict(svm_model1,svm_test)
+predicttable1 <- table(energypredict1, svm_test$Category_Y1)
+predicttable1
+
+energypredict2 <- predict(svm_model2,svm_test)
+predicttable2 <- table(energypredict2, svm_test$Category_Y2)
+predicttable2
+
+#Calculate the accuracy
+sum(diag(predicttable1))/sum(predicttable1)
+sum(diag(predicttable2))/sum(predicttable2)
+
+# Confusion Matrix
+confusionMatrix(energypredict1, svm_test$Category_Y1)
+confusionMatrix(energypredict2, svm_test$Category_Y2)
+```
+
+
+
+
+```{r}
+#Creating New Train and Test sets for Neural Networks.
+
+set.seed(7) 
+dfn_index <- sample(nrow(df), 0.7 * nrow(df),replace = FALSE)
+dfn_train <- df [dfn_index, ]
+dfn_test <- df [-dfn_index, ]
+```
+
+```{r}
+dfn_train <- dfn_train[, !colnames(dfn_train) %in% c("X4","Category_Y1","Category_Y2", "Category_Y1_num", "Category_Y2_num")]
+dfn_test <- dfn_test[, !colnames(dfn_test) %in% c("X4","Category_Y1","Category_Y2", "Category_Y1_num", "Category_Y2_num")]
+```
+
+```{r}
+#Creating Two Functions : 
+  
+normalize <- function(x) {
+  return((x - min(x)) / (max(x) - min(x)))
+}
+denormalize <- function(y, x) {
+  return(y * (max(x) - min(x)) + min(x))
+}
+```
+
+```{r}
+dfn_train
+```
+
+
+
+```{r}
+# Apply normalization to the training and testing sets
+dfn_train_normalized <- as.data.frame(lapply(dfn_train, normalize))
+dfn_test_normalized <- as.data.frame(lapply(dfn_test, normalize))
+```
+
+
+```{r}
+model <- neuralnet(Y1 + Y2 ~ X1 + X2 + X3 + X5 + X7 + X6_3 + X6_4 + X6_5 + X8_1 + X8_2 + X8_3 + X8_4 + X8_5, data=dfn_train_normalized, hidden=layer_one, 
+                       lifesign="minimal", linear.output=TRUE, threshold=0.1, stepmax=1e7)
+plot(model)
+```
+
+
+
+```{r}
+
+# Initialize a list to store results
+cur_max_list <- list()
+
+for (layer_one in 1:5) {
+    # Train the neural network model
+    model <- neuralnet(Y1 + Y2 ~ X1 + X2 + X3 + X5 + X7 + X6_3 + X6_4 + X6_5 + X8_1 + X8_2 + X8_3 + X8_4 + X8_5, data=dfn_train_normalized, hidden=layer_one, 
+                       lifesign="minimal", linear.output=TRUE, threshold=0.1, stepmax=1e7)
+
+    # Compute predictions on the normalized test dataset
+    results <- compute(model, dfn_test_normalized[, names(dfn_test_normalized) != "Y1" & names(dfn_test_normalized) != "Y2"])
+
+    # Denormalize the predictions
+    denorm_Y1 <- denormalize(results$net.result[, 1], dfn_train$Y1)
+    denorm_Y2 <- denormalize(results$net.result[, 2], dfn_train$Y2)
+
+    # Calculate the correlation for Y1 and Y2
+    correlation_Y1 <- cor(denorm_Y1, dfn_test$Y1)
+    correlation_Y2 <- cor(denorm_Y2, dfn_test$Y2)
+
+    # Store the results as a named list within the list
+    cur_max_list[[paste("hidden_nodes", layer_one)]] <- list(Correlation_Y1 = correlation_Y1, Correlation_Y2 = correlation_Y2)
+
+    # Print the correlation for each model
+    cat("Model with", layer_one, "hidden node(s): Correlation_Y1 =", correlation_Y1, "; Correlation_Y2 =", correlation_Y2, "\n")
+}
+
+# Find the best model based on the highest correlation
+best_model_key <- which.max(sapply(cur_max_list, function(x) min(x$Correlation_Y1, x$Correlation_Y2)))
+best_model <- cur_max_list[[best_model_key]]
+cat("Best model configuration:", names(best_model_key), "\n")
+print(best_model)
+
+
+
+
+
+```
+
+
+
+```{r}
+knn_df <- svm_df
+```
+
+
+```{r}
+write.xlsx(knn_df, file = "knn.xslx")
+```
+
+
+```{r}
+getwd()
+```
+
+
+
+
+```{r}
+# Load necessary library
+library(class)
+
+# Assuming your data is in a dataframe named 'df'
+# Assuming 'Category_Y1' and 'Category_Y2' are your target variables
+
+# Encode categorical variables if they are factors
+df$Category_Y1_num <- as.numeric(as.factor(df$Category_Y1))
+df$Category_Y2_num <- as.numeric(as.factor(df$Category_Y2))
+
+# Split data into training and testing sets
+set.seed(7)  # for reproducibility
+train_indices <- sample(1:nrow(df), 0.7 * nrow(df))
+train_data <- df[train_indices, ]
+test_data <- df[-train_indices, ]
+
+# Predictor variables
+predictors <- c("X1","X2","X3","X5","X7","X6_3","X6_4","X6_5","X8_1", 
+    "X8_2","X8_3","X8_4","X8_5")
+
+# Perform KNN for Cooling Load (Category_Y1_num)
+knn_result_Y1 <- knn(train = train_data[predictors], test = test_data[predictors],
+                     cl = train_data$Category_Y1_num, k = 5) # Adjust k as needed
+
+# Perform KNN for Heating Load (Category_Y2_num)
+knn_result_Y2 <- knn(train = train_data[predictors], test = test_data[predictors],
+                     cl = train_data$Category_Y2_num, k = 5) # Adjust k as needed
+
+# Evaluate the models
+# Here you can use any suitable metric, like accuracy
+accuracy_Y1 <- sum(knn_result_Y1 == test_data$Category_Y1_num) / length(knn_result_Y1)
+accuracy_Y2 <- sum(knn_result_Y2 == test_data$Category_Y2_num) / length(knn_result_Y2)
+
+# Print accuracies
+print(accuracy_Y1)
+print(accuracy_Y2)
+
+```
+
+```{r}
+# Load necessary libraries
+library(class)
+library(ggplot2)
+
+# (Assuming you have already prepared your data and performed the KNN analysis as previously described)
+
+# Convert the results and actual values to a data frame for plotting
+results_df_Y1 <- data.frame(Actual = test_data$Category_Y1_num, Predicted = as.numeric(knn_result_Y1))
+results_df_Y2 <- data.frame(Actual = test_data$Category_Y2_num, Predicted = as.numeric(knn_result_Y2))
+
+# Plot for Cooling Load (Category_Y1)
+ggplot(results_df_Y1, aes(x = Actual, y = Predicted)) +
+  geom_point(alpha = 0.5) +
+  geom_jitter(color = "blue", size = 2) +
+  ggtitle("KNN Results for Cooling Load") +
+  xlab("Actual Category") +
+  ylab("Predicted Category")
+
+# Plot for Heating Load (Category_Y2)
+ggplot(results_df_Y2, aes(x = Actual, y = Predicted)) +
+  geom_point(alpha = 0.5) +
+  geom_jitter(color = "red", size = 2) +
+  ggtitle("KNN Results for Heating Load") +
+  xlab("Actual Category") +
+  ylab("Predicted Category")
+
+```
+
+
+
+```{r}
+# Assuming your dataframe is named 'df'
+# And 'Category_Y1' and 'Category_Y2' are your target variables
+
+# Split data into training and testing sets
+set.seed(7)  # for reproducibility
+train_indices <- sample(1:nrow(df), 0.7 * nrow(df))
+train_data <- df[train_indices, ]
+test_data <- df[-train_indices, ]
+
+# Predictor variables
+predictors <- c("X1","X2","X3","X5","X7","X6_3","X6_4","X6_5","X8_1", 
+    "X8_2","X8_3","X8_4","X8_5")
+
+# Naive Bayes analysis for Cooling Load (Category_Y1)
+nb_model_Y1 <- naiveBayes(Category_Y1 ~ X1 + X2 + X3 + X5 + X7 + X6_3 + X6_4 + X6_5 + X8_1 + X8_2 + X8_3 + X8_4 + X8_5, data = train_data)
+nb_pred_Y1 <- predict(nb_model_Y1, test_data)
+
+# Naive Bayes analysis for Heating Load (Category_Y2)
+nb_model_Y2 <- naiveBayes(Category_Y2 ~ X1 + X2 + X3 + X5 + X7 + X6_3 + X6_4 + X6_5 + X8_1 + X8_2 + X8_3 + X8_4 + X8_5, data = train_data)
+nb_pred_Y2 <- predict(nb_model_Y2, test_data)
+
+# Evaluate the models
+# You can use accuracy or other suitable metrics
+accuracy_Y1 <- sum(nb_pred_Y1 == test_data$Category_Y1) / nrow(test_data)
+accuracy_Y2 <- sum(nb_pred_Y2 == test_data$Category_Y2) / nrow(test_data)
+
+# Print the accuracies
+print(accuracy_Y1)
+print(accuracy_Y2)
+
+```
+
+
+
